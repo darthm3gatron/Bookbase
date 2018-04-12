@@ -19,6 +19,7 @@ import com.squareup.picasso.Picasso;
 import org.w3c.dom.Text;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -92,7 +93,7 @@ public class BooksAdapter extends RecyclerView.Adapter<BooksAdapter.ViewHolder>{
 
 
 
-    public void add(Book book) {
+    public void addSingle(Book book) {
         sortedList.add(book);
     }
 
@@ -122,6 +123,15 @@ public class BooksAdapter extends RecyclerView.Adapter<BooksAdapter.ViewHolder>{
         }
         sortedList.addAll(books);
         sortedList.endBatchedUpdates();
+    }
+
+    public Comparator<Book> getComparator() {
+        return comparator;
+    }
+
+    public void setComparator(Comparator<Book> comparator) {
+        this.comparator = comparator;
+        notifyDataSetChanged();
     }
 
     private Context getContext(){

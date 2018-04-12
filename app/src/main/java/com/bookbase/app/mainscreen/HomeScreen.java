@@ -14,6 +14,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -138,6 +139,7 @@ public class HomeScreen extends AppCompatActivity implements
 
         // Update UI to indicate currently selected item.
         item.setChecked(true);
+        setTitle(item.getTitle());
         drawer.closeDrawers();
     }
 

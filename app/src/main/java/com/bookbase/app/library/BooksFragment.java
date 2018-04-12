@@ -7,34 +7,37 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.transition.TransitionManager;
 import android.support.v4.app.Fragment;
-import android.support.v4.view.MenuCompat;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.view.MenuItemCompat;
-import android.support.v7.util.SortedList;
-import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.SearchView;
 import android.widget.TextView;
 
 import com.bookbase.app.R;
 import com.bookbase.app.database.AppDatabase;
 import com.bookbase.app.library.addBook.AddBookActivity;
 import com.bookbase.app.library.viewBook.ViewBookFragment;
+import com.bookbase.app.model.entity.Author;
 import com.bookbase.app.model.entity.Book;
 import com.bookbase.app.model.repository.Repository;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class BooksFragment extends Fragment implements Runnable, android.support.v7.widget.SearchView.OnQueryTextListener {
+public class BooksFragment extends Fragment implements Runnable,
+        android.support.v7.widget.SearchView.OnQueryTextListener,
+        LibraryFilterFragment.FilterDialogListener {
 
     private OnFragmentInteractionListener mListener;
     private List<Book> books;
@@ -42,12 +45,59 @@ public class BooksFragment extends Fragment implements Runnable, android.support
     private RecyclerView bookList;
     private Repository repository;
     private TextView emptyView;
-    BooksAdapter adapter;
+    private BooksAdapter adapter;
+    private boolean sortAscending = true;
 
-    private final Comparator<Book> comparator = new Comparator<Book>() {
+    private final Comparator<Book> COMPARATOR_TITLE = new Comparator<Book>() {
         @Override
         public int compare(Book o1, Book o2) {
-            return o1.getTitle().compareTo(o2.getTitle());
+            return sortAscending ? o1.getTitle().compareTo(o2.getTitle()) :
+                    o2.getTitle().compareTo(o1.getTitle());
+        }
+    };
+
+    private final Comparator<Book> COMPARATOR_AUTHOR = new Comparator<Book>() {
+        @Override
+        public int compare(Book o1, Book o2) {
+            String author1 = o1.getAuthor().getName();
+            String author2 = o2.getAuthor().getName();
+            int result = sortAscending ? author1.compareTo(author2) : author2.compareTo(author1);
+            Log.d("Comparator Testing", String.format(author1 + " vs " + author2 + " = %d", result));
+            return sortAscending ? author1.compareTo(author2) : author2.compareTo(author1);
+        }
+    };
+
+    private final Comparator<Book> COMPARATOR_GENRE = new Comparator<Book>() {
+        @Override
+        public int compare(Book o1, Book o2) {
+            String genre1 = o1.getGenre().getGenreName();
+            String genre2 = o2.getGenre().getGenreName();
+            return sortAscending ? genre1.compareTo(genre2) : genre2.compareTo(genre1);
+        }
+    };
+
+    private final Comparator<Book> COMPARATOR_RATING = new Comparator<Book>() {
+        // TODO: Need to implement a more elegant solution here.
+        @Override
+        public int compare(Book o1, Book o2) {
+            if(sortAscending) {
+                if(o1.getRating() == o2.getRating()) {
+                    return 0;
+                } if (o1.getRating() > o2.getRating()) {
+                    return 1;
+                } else {
+                    return -1;
+                }
+            } else {
+                if(o1.getRating() == o2.getRating()) {
+                    return 0;
+                } if (o1.getRating() > o2.getRating()) {
+                    return -1;
+                } else {
+                    return 1;
+                }
+            }
+
         }
     };
 
@@ -88,12 +138,32 @@ public class BooksFragment extends Fragment implements Runnable, android.support
     }
 
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+    public void onCreateOptionsMenu(final Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.library_menu, menu);
 
+        final TextView toolbarTitle = getActivity().findViewById(R.id.toolbar_title);
         final MenuItem searchMenuItem = menu.findItem(R.id.searchButton);
+        final MenuItem filterMenuItem = menu.findItem(R.id.filterButton);
         final android.support.v7.widget.SearchView searchView = (android.support.v7.widget.SearchView) MenuItemCompat.getActionView(searchMenuItem);
         searchView.setOnQueryTextListener(this);
+
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                menu.findItem(R.id.filterButton).setVisible(false);
+                toolbarTitle.setVisibility(View.GONE);
+                searchView.requestFocus(View.FOCUS_DOWN, null);
+            }
+        });
+
+        searchView.setOnCloseListener(new android.support.v7.widget.SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                menu.findItem(R.id.filterButton).setVisible(true);
+                toolbarTitle.setVisibility(View.VISIBLE  );
+                return false;
+            }
+        });
     }
 
     @Override
@@ -107,6 +177,23 @@ public class BooksFragment extends Fragment implements Runnable, android.support
         adapter.replaceAll(filteredModelList);
         bookList.scrollToPosition(0);
         return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.searchButton:
+                TransitionManager.beginDelayedTransition((ViewGroup) getActivity().findViewById(R.id.toolbar));
+                MenuItemCompat.expandActionView(item);
+                return true;
+            case R.id.filterButton:
+                LibraryFilterFragment fragment = new LibraryFilterFragment();
+                FragmentManager manager = getChildFragmentManager();
+                manager.beginTransaction().add(fragment, "Filter").addToBackStack(null).commit();
+                //fragment.show(getActivity().getSupportFragmentManager(), "Filter");
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private static List<Book> filter(List<Book> books, String query) {
@@ -185,7 +272,7 @@ public class BooksFragment extends Fragment implements Runnable, android.support
 
     private void setupAdapter(List<Book> books){
         if (adapter == null) {
-            adapter = new BooksAdapter(getActivity(), books, comparator);
+            adapter = new BooksAdapter(getActivity(), books, COMPARATOR_TITLE);
         }
         adapter.add(books);
         if(books.isEmpty()) {
@@ -199,6 +286,31 @@ public class BooksFragment extends Fragment implements Runnable, android.support
             adapter.notifyItemRangeInserted(currSize, books.size());
             adapter.notifyDataSetChanged();
         }
+
     }
 
+    @Override
+    public void onCancel(LibraryFilterFragment dialog) {
+
+    }
+
+    @Override
+    public void onApply(LibraryFilterFragment dialog) {
+        sortAscending = dialog.getSortOrder();
+        switch(dialog.getSortOption()) {
+            case "Title":
+                setupAdapter(books);
+                break;
+            case "Author":
+                adapter.setComparator(COMPARATOR_AUTHOR);
+                setupAdapter(books);
+                break;
+            case "Genre":
+                setupAdapter(books);
+                break;
+            case "Rating":
+                setupAdapter(books);
+                break;
+        }
+    }
 }

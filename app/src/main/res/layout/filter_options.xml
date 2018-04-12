@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/filters_form"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Order by items -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:id="@+id/title_sort_options"
+            android:layout_centerVertical="true"
+            android:text="Order By"/>
+
+        <Spinner
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/spinner_sort_options"
+            android:layout_centerVertical="true"
+            android:layout_toRightOf="@+id/title_sort_options"
+            android:entries="@array/order_by_items"/>
+
+    </RelativeLayout>
+
+    <!-- Options (Asc/Desc) -->
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:id="@+id/title_sort_order"
+            android:layout_centerVertical="true"
+            android:text="Asc/Desc"/>
+
+        <Spinner
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/spinner_sort_order"
+            android:layout_centerVertical="true"
+            android:layout_toRightOf="@+id/title_sort_order"
+            android:entries="@array/order_by_options"/>
+
+    </RelativeLayout>
+
+</LinearLayout>
